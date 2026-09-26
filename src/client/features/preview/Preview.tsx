@@ -39,6 +39,8 @@ export interface PreviewProps {
   onHeadings?: (headings: Heading[]) => void
   scrollerRef?: RefObject<HTMLDivElement | null>
   onRendered?: () => void
+  onInitialRender?: (scroller: HTMLDivElement) => void
+  onScroll?: (scroller: HTMLDivElement) => void
   className?: string
 }
 
@@ -49,6 +51,8 @@ export const Preview = memo(function Preview({
   onHeadings,
   scrollerRef: externalScrollerRef,
   onRendered,
+  onInitialRender,
+  onScroll,
   className,
 }: PreviewProps) {
   const hostRef = useRef<HTMLDivElement>(null)
@@ -77,6 +81,7 @@ export const Preview = memo(function Preview({
   const preparationRef = useRef(0)
   const mermaidRevisionRef = useRef(0)
   const pendingViewportRef = useRef<PreviewViewport | null>(null)
+  const initialRenderRestoredRef = useRef(false)
   const copyResetTimersRef = useRef(new Map<HTMLElement, number>())
   const wikiNavigationRef = useRef(0)
   const wikiScrollCleanupRef = useRef<() => void>(() => {})
@@ -205,8 +210,12 @@ export const Preview = memo(function Preview({
     const scroller = scrollerRef.current
     const host = hostRef.current
     if (snapshot && scroller && host) restorePreviewViewport(scroller, host, snapshot)
+    if (!initialRenderRestoredRef.current && scroller) {
+      initialRenderRestoredRef.current = true
+      onInitialRender?.(scroller)
+    }
     onRendered?.()
-  }, [committedHtml, onRendered, scrollerRef])
+  }, [committedHtml, onInitialRender, onRendered, scrollerRef])
 
 
   const onClick = (event: React.MouseEvent) => {
@@ -390,6 +399,7 @@ export const Preview = memo(function Preview({
       ref={scrollerRef}
       className={cn('h-full overflow-y-auto overscroll-contain px-4 py-3', className)}
       data-preview-scroller
+      onScroll={(event) => onScroll?.(event.currentTarget)}
     >
       <div
         ref={hostRef}
