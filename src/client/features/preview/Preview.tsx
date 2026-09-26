@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from 'react'
 import { cn } from '../../lib/cn'
+import { copyTextToClipboard } from '../../lib/clipboard'
 import { truncateText } from '@shared/text-utils'
 import { useDebounced } from '../../lib/hooks'
 import { decodeDataValue } from '../../lib/markdown/data-attr'
@@ -333,6 +334,16 @@ export const Preview = memo(function Preview({
     if (tag) {
       event.preventDefault()
       openView('tag', { tag: decodeDataValue(tag.dataset.tag) })
+      return
+    }
+
+    const inlineCode = target.closest<HTMLElement>('code')
+    if (inlineCode && !inlineCode.closest('pre, a[href]')) {
+      const text = inlineCode.textContent?.trim() ?? ''
+      if (!text) return
+      void copyTextToClipboard(text)
+        .then(() => toast({ title: t("common.copied"), tone: 'success' }))
+        .catch(() => toast({ title: t("preview.could_not_copy"), tone: 'danger' }))
       return
     }
 
